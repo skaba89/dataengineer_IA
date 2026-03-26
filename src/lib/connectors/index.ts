@@ -1,7 +1,17 @@
-// Database Connectors - Real implementations for PostgreSQL, BigQuery, and more
+// Database Connectors - Real implementations for PostgreSQL, BigQuery, MySQL, MongoDB, Snowflake
 import { db } from "@/lib/db"
 import { Pool } from "pg"
 import { BigQuery } from "@google-cloud/bigquery"
+
+// Export additional connectors
+export { MySQLConnector } from './mysql-connector'
+export type { MySQLConnectionConfig, MySQLTableSchema, MySQLColumnInfo, MySQLDataProfile } from './mysql-connector'
+
+export { MongoDBConnector } from './mongodb-connector'
+export type { MongoDBConnectionConfig, MongoDBCollectionSchema, MongoDBSchemaField, MongoDBDataProfile } from './mongodb-connector'
+
+export { SnowflakeConnector } from './snowflake-connector'
+export type { SnowflakeConnectionConfig, SnowflakeTableSchema, SnowflakeColumnInfo, SnowflakeDataProfile } from './snowflake-connector'
 
 // ============================================
 // Base Connector Interface
