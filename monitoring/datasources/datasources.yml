@@ -1,0 +1,34 @@
+# Grafana Datasources Configuration
+apiVersion: 1
+
+datasources:
+  # Prometheus
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    editable: false
+
+  # PostgreSQL
+  - name: PostgreSQL
+    type: postgres
+    url: postgres:5432
+    database: datasphere
+    user: ${POSTGRES_USER}
+    jsonData:
+      sslmode: disable
+      maxOpenConns: 10
+      maxIdleConns: 5
+      connMaxLifetime: 14400
+    secureJsonData:
+      password: ${POSTGRES_PASSWORD}
+    editable: false
+
+  # Redis
+  - name: Redis
+    type: redis-datasource
+    url: redis://redis:6379
+    jsonData:
+      client: standalone
+    editable: false

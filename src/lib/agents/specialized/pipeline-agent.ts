@@ -1,0 +1,436 @@
+// AI Data Engineering System - Pipeline Agent
+
+import { BaseAgent } from '../core/base-agent';
+import type { AgentContext, AgentResult, PipelineConfig } from '../types';
+
+export class PipelineAgent extends BaseAgent {
+  constructor() {
+    super({
+      type: 'pipeline',
+      name: 'Flow Builder',
+      description: 'Generates production-ready ETL/ELT pipelines with orchestration, error handling, and monitoring.',
+      systemPrompt: `You are the Pipeline Agent for the AI Data Engineering System. Your role is to:
+
+1. **Pipeline Generation**: Create robust, maintainable data pipelines
+2. **Orchestration Setup**: Configure DAG dependencies and scheduling
+3. **Error Handling**: Implement retry logic, dead letter queues, alerts
+4. **Performance Optimization**: Design for scalability and efficiency
+
+## Pipeline Types
+- **Extract**: Source-to-raw data extraction
+- **Transform**: Data transformation and cleansing
+- **Load**: Target system loading
+- **Full ETL**: End-to-end pipelines
+
+## Best Practices
+- Idempotent operations
+- Incremental loading patterns
+- Data quality gates
+- Comprehensive logging
+- Graceful degradation
+- Resource optimization
+
+## Code Generation
+Generate production-ready code for:
+- Apache Airflow DAGs (Python)
+- dbt models (SQL)
+- Spark jobs (Python/Scala)
+- Generic Python ETL scripts
+
+## Output Structure
+For each pipeline, provide:
+- Pipeline code
+- Configuration files
+- Test cases
+- Documentation
+- Deployment notes`,
+      capabilities: [
+        'DAG generation',
+        'dbt model creation',
+        'Spark job development',
+        'Error handling patterns',
+        'Performance tuning',
+        'Testing automation',
+      ],
+    });
+  }
+
+  async execute(context: AgentContext, userMessage: string): Promise<AgentResult> {
+    const result = await super.execute(context, userMessage);
+
+    if (result.success) {
+      // Generate pipeline configurations
+      const pipelines = await this.generatePipelines(context);
+      result.output.pipelines = pipelines;
+
+      // Add pipeline artifacts
+      for (const pipeline of pipelines) {
+        result.artifacts?.push({
+          type: 'code',
+          name: `${pipeline.name}.${pipeline.language}`,
+          content: pipeline.code,
+          language: pipeline.language,
+        });
+      }
+
+      // Add DAG configuration
+      result.artifacts?.push({
+        type: 'config',
+        name: 'dag_config.yaml',
+        content: this.generateDAGConfig(pipelines),
+        language: 'yaml',
+      });
+    }
+
+    return result;
+  }
+
+  private async generatePipelines(context: AgentContext): Promise<PipelineConfig[]> {
+    const sources = context.projectData.dataSources || [];
+    const architecture = context.projectData.architecture;
+    const pipelines: PipelineConfig[] = [];
+
+    for (const source of sources) {
+      // Generate extraction pipeline
+      pipelines.push(this.createExtractionPipeline(source, architecture?.orchestrationTool || 'airflow'));
+
+      // Generate transformation pipeline
+      pipelines.push(this.createTransformationPipeline(source, architecture?.transformationFramework || 'dbt'));
+    }
+
+    return pipelines;
+  }
+
+  private createExtractionPipeline(
+    source: { id: string; name: string; type: string },
+    orchestrationTool: string
+  ): PipelineConfig {
+    const pipelineId = `extract_${source.name.toLowerCase().replace(/\s+/g, '_')}`;
+    
+    if (orchestrationTool === 'airflow') {
+      return {
+        id: pipelineId,
+        name: `Extract ${source.name}`,
+        type: 'extract',
+        source: source.id,
+        target: 'raw_layer',
+        schedule: '0 2 * * *', // Daily at 2 AM
+        language: 'python',
+        code: this.generateAirflowDAG(source, pipelineId),
+      };
+    }
+
+    // Default Python extraction
+    return {
+      id: pipelineId,
+      name: `Extract ${source.name}`,
+      type: 'extract',
+      source: source.id,
+      target: 'raw_layer',
+      schedule: '0 2 * * *',
+      language: 'python',
+      code: this.generatePythonExtraction(source),
+    };
+  }
+
+  private createTransformationPipeline(
+    source: { id: string; name: string },
+    framework: string
+  ): PipelineConfig {
+    const pipelineId = `transform_${source.name.toLowerCase().replace(/\s+/g, '_')}`;
+
+    if (framework === 'dbt') {
+      return {
+        id: pipelineId,
+        name: `Transform ${source.name}`,
+        type: 'transform',
+        source: `raw.${source.name}`,
+        target: `staging.${source.name}`,
+        language: 'sql',
+        code: this.generateDbtModel(source),
+      };
+    }
+
+    return {
+      id: pipelineId,
+      name: `Transform ${source.name}`,
+      type: 'transform',
+      language: 'python',
+      code: this.generatePythonTransformation(source),
+    };
+  }
+
+  private generateAirflowDAG(source: { name: string; type: string }, pipelineId: string): string {
+    return `"""
+${source.name} Extraction Pipeline
+Generated by AI Data Engineering System
+"""
+
+from datetime import datetime, timedelta
+from airflow import DAG
+from airflow.operators.python import PythonOperator
+from airflow.providers.postgres.operators.postgres import PostgresOperator
+from airflow.utils.dates import days_ago
+
+default_args = {
+    'owner': 'data-engineering',
+    'depends_on_past': False,
+    'email_on_failure': True,
+    'email_on_retry': False,
+    'retries': 3,
+    'retry_delay': timedelta(minutes=5),
+    'catchup': False,
+}
+
+dag = DAG(
+    '${pipelineId}',
+    default_args=default_args,
+    description='Extract data from ${source.name}',
+    schedule_interval='0 2 * * *',
+    start_date=days_ago(1),
+    tags=['extraction', '${source.type}'],
+)
+
+def extract_${source.name.toLowerCase().replace(/\s+/g, '_')}(**context):
+    """
+    Extract data from ${source.name} source.
+    Implements incremental extraction with watermark.
+    """
+    import logging
+    from datetime import datetime
+    
+    execution_date = context['execution_date']
+    logging.info(f"Starting extraction for {source.name} at {execution_date}")
+    
+    # TODO: Implement extraction logic
+    # 1. Connect to source
+    # 2. Extract data with incremental watermark
+    # 3. Write to raw layer
+    # 4. Log metrics
+    
+    records_extracted = 0  # Placeholder
+    logging.info(f"Extraction complete. Records: {records_extracted}")
+    
+    return {'records_extracted': records_extracted}
+
+extract_task = PythonOperator(
+    task_id='extract_data',
+    python_callable=extract_${source.name.toLowerCase().replace(/\s+/g, '_')},
+    dag=dag,
+)
+
+# Data quality check
+quality_check = PostgresOperator(
+    task_id='quality_check',
+    postgres_conn_id='warehouse',
+    sql='''
+        SELECT COUNT(*) FROM raw.${source.name.toLowerCase().replace(/\s+/g, '_')}
+        WHERE loaded_at >= CURRENT_DATE
+    ''',
+    dag=dag,
+)
+
+extract_task >> quality_check`;
+  }
+
+  private generatePythonExtraction(source: { name: string; type: string }): string {
+    return `"""
+${source.name} Extraction Script
+Generated by AI Data Engineering System
+"""
+
+import logging
+from datetime import datetime
+from typing import Optional
+import pandas as pd
+
+logger = logging.getLogger(__name__)
+
+class ${source.name.replace(/\s+/g, '')}Extractor:
+    """Extract data from ${source.name}."""
+    
+    def __init__(self, config: dict):
+        self.config = config
+        self.source_type = '${source.type}'
+    
+    def connect(self) -> bool:
+        """Establish connection to source."""
+        # TODO: Implement connection logic
+        logger.info(f"Connecting to {self.source_type} source")
+        return True
+    
+    def extract(self, watermark: Optional[datetime] = None) -> pd.DataFrame:
+        """
+        Extract data with optional incremental watermark.
+        
+        Args:
+            watermark: Last extraction timestamp for incremental load
+            
+        Returns:
+            DataFrame with extracted data
+        """
+        logger.info(f"Starting extraction from {self.source_type}")
+        
+        if watermark:
+            logger.info(f"Incremental extraction from {watermark}")
+        
+        # TODO: Implement extraction
+        df = pd.DataFrame()  # Placeholder
+        
+        logger.info(f"Extracted {len(df)} records")
+        return df
+    
+    def load_to_raw(self, df: pd.DataFrame, target_table: str) -> int:
+        """Load extracted data to raw layer."""
+        # TODO: Implement loading logic
+        return len(df)
+
+
+def main():
+    """Main extraction pipeline."""
+    extractor = ${source.name.replace(/\s+/g, '')}Extractor({})
+    
+    if not extractor.connect():
+        raise RuntimeError("Failed to connect to source")
+    
+    df = extractor.extract()
+    records_loaded = extractor.load_to_raw(df, 'raw.${source.name.toLowerCase().replace(/\s+/g, '_')}')
+    
+    print(f"Pipeline complete. Loaded {records_loaded} records.")
+
+
+if __name__ == '__main__':
+    logging.basicConfig(level=logging.INFO)
+    main()`;
+  }
+
+  private generateDbtModel(source: { name: string }): string {
+    const tableName = source.name.toLowerCase().replace(/\s+/g, '_');
+    
+    return `-- Staging model for ${source.name}
+-- Generated by AI Data Engineering System
+
+{{
+    config(
+        materialized='incremental',
+        unique_key='id',
+        cluster_by=['created_at'],
+        tags=['staging', '${tableName}']
+    )
+}}
+
+with source as (
+    select * from {{ source('raw', '${tableName}') }}
+    {% if is_incremental() %}
+    where loaded_at > (select max(updated_at from {{ this }}})
+    {% endif %}
+),
+
+cleaned as (
+    select
+        -- Primary key
+        id,
+        
+        -- Data cleansing
+        upper(trim(email)) as email,
+        coalesce(status, 'unknown') as status,
+        
+        -- Timestamps
+        created_at,
+        updated_at,
+        loaded_at,
+        
+        -- Metadata
+        {{ dbt_utils.generate_surrogate_key(['id']) }} as surrogate_key
+        
+    from source
+    where id is not null  -- Quality gate
+)
+
+select * from cleaned
+
+-- Tests
+-- {{ test_not_null('id') }}
+-- {{ test_unique('id') }}`;
+  }
+
+  private generatePythonTransformation(source: { name: string }): string {
+    return `"""
+${source.name} Transformation Script
+Generated by AI Data Engineering System
+"""
+
+import pandas as pd
+import numpy as np
+from typing import List, Dict
+
+def transform_${source.name.toLowerCase().replace(/\s+/g, '_')}(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Transform raw ${source.name} data to staging format.
+    
+    Steps:
+    1. Data cleansing
+    2. Type conversion
+    3. Deduplication
+    4. Business logic
+    """
+    
+    # Remove duplicates
+    df = df.drop_duplicates(subset=['id'], keep='last')
+    
+    # Clean string columns
+    string_cols = df.select_dtypes(include=['object']).columns
+    for col in string_cols:
+        df[col] = df[col].str.strip().str.lower()
+    
+    # Convert timestamps
+    for col in ['created_at', 'updated_at']:
+        if col in df.columns:
+            df[col] = pd.to_datetime(df[col], errors='coerce')
+    
+    # Add metadata
+    df['transformed_at'] = pd.Timestamp.now()
+    df['transformation_version'] = '1.0.0'
+    
+    return df
+
+
+def main():
+    # Load from raw
+    df = pd.read_parquet('s3://bucket/raw/${source.name.toLowerCase().replace(/\s+/g, '_')}/')
+    
+    # Transform
+    df_transformed = transform_${source.name.toLowerCase().replace(/\s+/g, '_')}(df)
+    
+    # Save to staging
+    df_transformed.to_parquet('s3://bucket/staging/${source.name.toLowerCase().replace(/\s+/g, '_')}/')
+    
+    print(f"Transformed {len(df_transformed)} records")
+
+
+if __name__ == '__main__':
+    main()`;
+  }
+
+  private generateDAGConfig(pipelines: PipelineConfig[]): string {
+    return `# Pipeline Configuration
+# Generated by AI Data Engineering System
+
+pipelines:
+${pipelines.map(p => `  - name: ${p.name}
+    id: ${p.id}
+    type: ${p.type}
+    schedule: "${p.schedule || 'manual'}"
+    source: ${p.source || 'N/A'}
+    target: ${p.target || 'N/A'}
+    dependencies: ${JSON.stringify(p.dependencies || [])}`).join('\n')}
+
+# Global settings
+settings:
+  retry_count: 3
+  retry_delay_minutes: 5
+  timeout_minutes: 60
+  alert_on_failure: true
+  alert_email: data-team@company.com`;
+  }
+}

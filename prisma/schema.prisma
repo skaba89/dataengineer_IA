@@ -1,0 +1,496 @@
+// AI Data Engineering System - Prisma Schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// AUTHENTICATION (NextAuth.js)
+// ============================================
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  emailVerified DateTime?
+  name          String?
+  password      String?   // Hashed password for credentials auth
+  image         String?
+  role          String    @default("user") // admin, manager, analyst, viewer
+  mfaEnabled    Boolean   @default(false)
+  organizationId String?
+  organization  Organization? @relation(fields: [organizationId], references: [id])
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  accounts      Account[]
+  sessions      Session[]
+  projects      Project[]
+  agents        AgentExecution[]
+  notifications Notification[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ============================================
+// ORGANIZATIONS (Multi-Tenant)
+// ============================================
+
+model Organization {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  industry    String?  // retail, finance, healthcare, saas, manufacturing, logistics
+  description String?
+  logo        String?
+  website     String?
+  plan        String   @default("starter") // starter, professional, enterprise
+  seats       Int      @default(5)
+  settings    String?  // JSON for org-specific settings
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  projects    Project[]
+  members     User[]
+  apiKeys     ApiKey[]
+}
+
+model ApiKey {
+  id             String   @id @default(cuid())
+  name           String
+  key            String   @unique
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  lastUsed       DateTime?
+  expiresAt      DateTime?
+  createdAt      DateTime @default(now())
+}
+
+// ============================================
+// NOTIFICATIONS
+// ============================================
+
+model Notification {
+  id          String   @id @default(cuid())
+  type        String   // workflow_started, workflow_completed, agent_failed, etc.
+  title       String
+  message     String
+  read        Boolean  @default(false)
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  projectId   String?
+  metadata    String?  // JSON
+  createdAt   DateTime @default(now())
+}
+
+// ============================================
+// PROJECTS & DATA ENGINEERING
+// ============================================
+
+model Project {
+  id              String   @id @default(cuid())
+  name            String
+  slug            String   @unique
+  description     String?
+  status          String   @default("draft") // draft, discovery, architecture, development, deployed, completed
+  package         String   @default("starter") // starter, professional, enterprise
+  budget          Float?
+  startDate       DateTime?
+  endDate         DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  organizationId  String?
+  organization    Organization? @relation(fields: [organizationId], references: [id])
+  ownerId         String
+  owner           User     @relation(fields: [ownerId], references: [id])
+  dataSources     DataSource[]
+  pipelines       Pipeline[]
+  dashboards      Dashboard[]
+  executions      AgentExecution[]
+  deliverables    Deliverable[]
+}
+
+// Data sources discovered
+model DataSource {
+  id           String   @id @default(cuid())
+  name         String
+  type         String   // postgresql, mysql, mongodb, bigquery, snowflake, api, file, etc.
+  host         String?
+  port         Int?
+  database     String?
+  schema       String?  // JSON schema of the data source
+  status       String   @default("pending") // pending, connected, error
+  lastSync     DateTime?
+  metadata     String?  // JSON additional metadata
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  projectId    String
+  project      Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  tables       SourceTable[]
+}
+
+// Tables within a data source
+model SourceTable {
+  id           String   @id @default(cuid())
+  name         String
+  schema       String?  // JSON schema of columns
+  rowCount     Int?
+  columns      String?  // JSON array of column definitions
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  dataSourceId String
+  dataSource   DataSource @relation(fields: [dataSourceId], references: [id], onDelete: Cascade)
+}
+
+// Generated pipelines
+model Pipeline {
+  id           String   @id @default(cuid())
+  name         String
+  type         String   // etl, elt, streaming
+  framework    String   // airflow, dbt, dagster
+  status       String   @default("generated") // generated, deployed, running, error
+  code         String?  // Generated pipeline code
+  schedule     String?  // Cron schedule
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  projectId    String
+  project      Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+// Dashboards
+model Dashboard {
+  id           String   @id @default(cuid())
+  name         String
+  type         String   // looker, tableau, powerbi, custom
+  config       String?  // JSON dashboard configuration
+  url          String?  // Dashboard URL if deployed
+  status       String   @default("created")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  projectId    String
+  project      Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+// Agent execution logs
+model AgentExecution {
+  id           String   @id @default(cuid())
+  agentType    String   // discovery, architecture, pipeline, transformation, bi, etc.
+  status       String   @default("running") // running, completed, failed
+  input        String?  // JSON input data
+  output       String?  // JSON output data
+  error        String?
+  duration     Int?     // milliseconds
+  createdAt    DateTime @default(now())
+  projectId    String
+  project      Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  userId       String?
+  user         User?    @relation(fields: [userId], references: [id])
+}
+
+// Project deliverables
+model Deliverable {
+  id           String   @id @default(cuid())
+  type         String   // architecture_doc, pipeline_code, dashboard, report
+  name         String
+  content      String?  // Content or path to file
+  format       String?  // markdown, python, sql, json
+  fileSize     Int?     // File size in bytes
+  downloadUrl  String?  // Signed URL for download
+  createdAt    DateTime @default(now())
+  projectId    String
+  project      Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+// ============================================
+// TEMPLATES & KNOWLEDGE BASE
+// ============================================
+
+model ProjectTemplate {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  industry    String   // retail, finance, healthcare, saas, manufacturing, logistics
+  description String?
+  config      String   // JSON template configuration
+  isPublic    Boolean  @default(false)
+  isPremium   Boolean  @default(false)
+  useCount    Int      @default(0)
+  rating      Float?   // Average rating
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// Knowledge base for RAG
+model KnowledgeBase {
+  id           String   @id @default(cuid())
+  category     String   // architecture_pattern, pipeline_template, transformation_snippet
+  title        String
+  content      String
+  embedding    String?  // Vector embedding (stored as JSON for SQLite)
+  industry     String?  // Applicable industry
+  tags         String?  // JSON array of tags
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+// Conversation history for analytics
+model Conversation {
+  id           String   @id @default(cuid())
+  query        String
+  response     String
+  sqlQuery     String?  // Generated SQL if applicable
+  projectId    String?
+  userId       String?
+  createdAt    DateTime @default(now())
+}
+
+// ============================================
+// SCHEDULES & AUTOMATION
+// ============================================
+
+model Schedule {
+  id           String   @id @default(cuid())
+  name         String
+  projectId    String
+  scheduleType String   // once, daily, weekly, monthly, on_demand
+  cronExpr     String?
+  nextRunAt    DateTime?
+  lastRunAt    DateTime?
+  lastStatus   String?
+  status       String   @default("active") // active, paused, completed, failed
+  config       String?  // JSON
+  runCount     Int      @default(0)
+  successCount Int      @default(0)
+  failureCount Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+// ============================================
+// SECURITY & COMPLIANCE
+// ============================================
+
+model AuditLog {
+  id             String   @id @default(cuid())
+  timestamp      DateTime @default(now())
+  userId         String?
+  organizationId String?
+  action         String   // auth.login, data.exported, api_key.created, etc.
+  resource       String   // user, project, secret, etc.
+  resourceId     String?
+  details        String?  // JSON
+  ipAddress      String
+  userAgent      String
+  status         String   // success, failure, blocked
+  riskLevel      String   // low, medium, high, critical
+  metadata       String?  // JSON
+  signature      String   // Tamper-proof signature
+}
+
+model SecurityEvent {
+  id          String    @id @default(cuid())
+  type        String    // brute_force_detected, suspicious_activity, etc.
+  severity    String    // info, warning, error, critical
+  message     String
+  source      String    // audit_monitor, ids, etc.
+  timestamp   DateTime  @default(now())
+  resolved    Boolean   @default(false)
+  resolvedAt  DateTime?
+  resolvedBy  String?
+  metadata    String?   // JSON
+}
+
+model SecurityAlert {
+  id        String   @id @default(cuid())
+  eventId   String
+  type      String
+  severity  String
+  message   String
+  sentAt    DateTime @default(now())
+  channels  String?  // JSON - email, slack, pagerduty
+}
+
+model Secret {
+  id              String   @id @default(cuid())
+  name            String
+  type            String   // api_key, password, certificate, encryption_key, oauth_token
+  encryptedValue  String
+  iv              String
+  authTag         String
+  version         Int      @default(1)
+  organizationId  String?
+  createdBy       String
+  expiresAt       DateTime?
+  rotationDays    Int?
+  lastRotatedAt   DateTime?
+  accessLog       String?  // JSON array of access entries
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model IpRule {
+  id             String    @id @default(cuid())
+  ip             String
+  cidr           String?
+  type           String    // whitelist, blacklist
+  reason         String
+  organizationId String?
+  createdBy      String
+  expiresAt      DateTime?
+  active         Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+}
+
+model ComplianceReport {
+  id              String   @id @default(cuid())
+  framework       String   // SOC2, RGPD, HIPAA, PCI_DSS, ISO27001
+  organizationId  String?
+  score           Int
+  status          String   // compliant, non_compliant, partial
+  findings        String?  // JSON
+  recommendations String?  // JSON
+  generatedAt     DateTime @default(now())
+  periodStart     DateTime
+  periodEnd       DateTime
+  nextAuditDate   DateTime?
+  generatedBy     String?
+}
+
+model UserSecuritySettings {
+  id                    String   @id @default(cuid())
+  userId                String   @unique
+  mfaEnabled            Boolean  @default(false)
+  mfaSecret             String?
+  mfaBackupCodes        String?  // JSON array of backup codes
+  mfaType               String?  // totp, sms, email
+  passwordChangedAt     DateTime?
+  failedLoginAttempts   Int      @default(0)
+  lockedUntil           DateTime?
+  lastLoginAt           DateTime?
+  lastLoginIp           String?
+  securityQuestions     String?  // JSON
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
+
+model Vulnerability {
+  id                 String    @id @default(cuid())
+  cve                String?
+  name               String
+  description        String
+  severity           String    // info, low, medium, high, critical
+  cvssScore          Float
+  affectedComponent  String
+  affectedVersions   String?   // JSON array
+  patchedVersions    String?   // JSON array
+  exploitAvailable   Boolean   @default(false)
+  discoveredAt       DateTime  @default(now())
+  resolvedAt         DateTime?
+  status             String    @default("open") // open, acknowledged, in_progress, resolved, wont_fix
+  metadata           String?   // JSON
+}
+
+// ============================================
+// BILLING & SUBSCRIPTIONS (Stripe)
+// ============================================
+
+model Subscription {
+  id                   String   @id @default(cuid())
+  organizationId       String   @unique
+  plan                 String   @default("starter") // starter, professional, enterprise, agency
+  status               String   @default("active") // active, past_due, canceled, trialing, incomplete
+  stripeCustomerId     String?  @unique
+  stripeSubscriptionId String?  @unique
+  currentPeriodStart   DateTime @default(now())
+  currentPeriodEnd     DateTime @default(now())
+  cancelAtPeriodEnd    Boolean  @default(false)
+  trialEnd             DateTime?
+  seats                Int      @default(1)
+  limits               String   // JSON - subscription limits
+  invoices             Invoice[]
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+}
+
+model Invoice {
+  id                 String   @id @default(cuid())
+  subscriptionId     String?
+  subscription       Subscription? @relation(fields: [subscriptionId], references: [id])
+  stripeInvoiceId    String   @unique
+  amount             Float
+  currency           String   @default("EUR")
+  status             String   @default("pending") // pending, paid, failed, refunded
+  invoicePdf         String?
+  hostedInvoiceUrl   String?
+  paidAt             DateTime?
+  createdAt          DateTime @default(now())
+}
+
+// ============================================
+// DATA CONNECTORS
+// ============================================
+
+model Connector {
+  id             String   @id @default(cuid())
+  name           String
+  type           String   // postgresql, mysql, bigquery, snowflake, etc.
+  status         String   @default("pending") // pending, active, error, inactive
+  config         String?  // JSON configuration
+  credentials    String?  // JSON encrypted credentials
+  lastSync       DateTime?
+  organizationId String?
+  projectId      String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+// ============================================
+// SSO PROVIDERS
+// ============================================
+
+model SSOProvider {
+  id             String   @id @default(cuid())
+  name           String
+  type           String   // saml, oidc, oauth2
+  enabled        Boolean  @default(false)
+  config         String   // JSON configuration
+  attributeMap   String?  // JSON attribute mapping
+  organizationId String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}

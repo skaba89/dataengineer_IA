@@ -1,0 +1,517 @@
+// DataSphere Innovation - PostgreSQL Schema
+// Optimized for production deployment
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_DATABASE_URL")
+}
+
+// ============================================
+// AUTHENTICATION (NextAuth.js)
+// ============================================
+
+model User {
+  id             String    @id @default(cuid())
+  email          String    @unique
+  emailVerified  DateTime?
+  name           String?
+  password       String?   // Hashed password for credentials auth
+  image          String?
+  role           String    @default("user") // admin, manager, analyst, viewer
+  mfaEnabled     Boolean   @default(false)
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id])
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  accounts       Account[]
+  sessions       Session[]
+  projects       Project[]
+  agents         AgentExecution[]
+  notifications  Notification[]
+
+  @@index([email])
+  @@index([organizationId])
+  @@index([role])
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([sessionToken])
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ============================================
+// ORGANIZATIONS (Multi-Tenant)
+// ============================================
+
+model Organization {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  industry    String?  // retail, finance, healthcare, saas, manufacturing, logistics
+  description String?
+  logo        String?
+  website     String?
+  plan        String   @default("starter") // starter, professional, enterprise
+  seats       Int      @default(5)
+  settings    Json?    // JSON for org-specific settings
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  projects    Project[]
+  members     User[]
+  apiKeys     ApiKey[]
+
+  @@index([slug])
+  @@index([plan])
+}
+
+model ApiKey {
+  id             String   @id @default(cuid())
+  name           String
+  key            String   @unique
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  lastUsed       DateTime?
+  expiresAt      DateTime?
+  createdAt      DateTime @default(now())
+
+  @@index([key])
+  @@index([organizationId])
+}
+
+// ============================================
+// NOTIFICATIONS
+// ============================================
+
+model Notification {
+  id        String   @id @default(cuid())
+  type      String   // workflow_started, workflow_completed, agent_failed, etc.
+  title     String
+  message   String   @db.Text
+  read      Boolean  @default(false)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  projectId String?
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([read])
+  @@index([createdAt])
+}
+
+// ============================================
+// PROJECTS & DATA ENGINEERING
+// ============================================
+
+model Project {
+  id             String   @id @default(cuid())
+  name           String
+  slug           String   @unique
+  description    String?  @db.Text
+  status         String   @default("draft") // draft, discovery, architecture, development, deployed, completed
+  package        String   @default("starter") // starter, professional, enterprise
+  budget         Decimal? @db.Decimal(10, 2)
+  startDate      DateTime?
+  endDate        DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id])
+  ownerId        String
+  owner          User     @relation(fields: [ownerId], references: [id])
+  dataSources    DataSource[]
+  pipelines      Pipeline[]
+  dashboards     Dashboard[]
+  executions     AgentExecution[]
+  deliverables   Deliverable[]
+
+  @@index([slug])
+  @@index([status])
+  @@index([organizationId])
+  @@index([ownerId])
+}
+
+// Data sources discovered
+model DataSource {
+  id        String   @id @default(cuid())
+  name      String
+  type      String   // postgresql, mysql, mongodb, bigquery, snowflake, api, file, etc.
+  host      String?
+  port      Int?
+  database  String?
+  schema    Json?    // JSON schema of the data source
+  status    String   @default("pending") // pending, connected, error
+  lastSync  DateTime?
+  metadata  Json?    // JSON additional metadata
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  tables    SourceTable[]
+
+  @@index([projectId])
+  @@index([type])
+  @@index([status])
+}
+
+// Tables within a data source
+model SourceTable {
+  id           String   @id @default(cuid())
+  name         String
+  schema       Json?    // JSON schema of columns
+  rowCount     Int?
+  columns      Json?    // JSON array of column definitions
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  dataSourceId String
+  dataSource   DataSource @relation(fields: [dataSourceId], references: [id], onDelete: Cascade)
+
+  @@index([dataSourceId])
+}
+
+// Generated pipelines
+model Pipeline {
+  id        String   @id @default(cuid())
+  name      String
+  type      String   // etl, elt, streaming
+  framework String   // airflow, dbt, dagster
+  status    String   @default("generated") // generated, deployed, running, error
+  code      String?  @db.Text
+  schedule  String?  // Cron schedule
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@index([status])
+}
+
+// Dashboards
+model Dashboard {
+  id        String   @id @default(cuid())
+  name      String
+  type      String   // looker, tableau, powerbi, custom
+  config    Json?    // JSON dashboard configuration
+  url       String?
+  status    String   @default("created")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+}
+
+// Agent execution logs
+model AgentExecution {
+  id        String   @id @default(cuid())
+  agentType String   // discovery, architecture, pipeline, transformation, bi, etc.
+  status    String   @default("running") // running, completed, failed
+  input     Json?
+  output    Json?
+  error     String?  @db.Text
+  duration  Int?     // milliseconds
+  createdAt DateTime @default(now())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+
+  @@index([projectId])
+  @@index([agentType])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// Project deliverables
+model Deliverable {
+  id          String   @id @default(cuid())
+  type        String   // architecture_doc, pipeline_code, dashboard, report
+  name        String
+  content     String?  @db.Text
+  format      String?  // markdown, python, sql, json
+  fileSize    Int?
+  downloadUrl String?
+  createdAt   DateTime @default(now())
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@index([type])
+}
+
+// ============================================
+// TEMPLATES & KNOWLEDGE BASE
+// ============================================
+
+model ProjectTemplate {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  industry    String   // retail, finance, healthcare, saas, manufacturing, logistics
+  description String?  @db.Text
+  config      Json     // JSON template configuration
+  isPublic    Boolean  @default(false)
+  isPremium   Boolean  @default(false)
+  useCount    Int      @default(0)
+  rating      Decimal? @db.Decimal(2, 1)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([slug])
+  @@index([industry])
+  @@index([isPublic])
+}
+
+// Knowledge base for RAG
+model KnowledgeBase {
+  id        String   @id @default(cuid())
+  category  String   // architecture_pattern, pipeline_template, transformation_snippet
+  title     String
+  content   String   @db.Text
+  embedding String?  @db.Text // Vector embedding (stored as text for compatibility)
+  industry  String?
+  tags      String[] // Array of tags
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([category])
+  @@index([industry])
+}
+
+// Conversation history for analytics
+model Conversation {
+  id        String   @id @default(cuid())
+  query     String   @db.Text
+  response  String   @db.Text
+  sqlQuery  String?  @db.Text
+  projectId String?
+  userId    String?
+  createdAt DateTime @default(now())
+
+  @@index([projectId])
+  @@index([userId])
+  @@index([createdAt])
+}
+
+// ============================================
+// SCHEDULES & AUTOMATION
+// ============================================
+
+model Schedule {
+  id           String   @id @default(cuid())
+  name         String
+  projectId    String
+  scheduleType String   // once, daily, weekly, monthly, on_demand
+  cronExpr     String?
+  nextRunAt    DateTime?
+  lastRunAt    DateTime?
+  lastStatus   String?
+  status       String   @default("active") // active, paused, completed, failed
+  config       Json?
+  runCount     Int      @default(0)
+  successCount Int      @default(0)
+  failureCount Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([projectId])
+  @@index([status])
+  @@index([nextRunAt])
+}
+
+// ============================================
+// SECURITY & COMPLIANCE
+// ============================================
+
+model AuditLog {
+  id             String   @id @default(cuid())
+  timestamp      DateTime @default(now())
+  userId         String?
+  organizationId String?
+  action         String   // auth.login, data.exported, api_key.created, etc.
+  resource       String   // user, project, secret, etc.
+  resourceId     String?
+  details        Json?
+  ipAddress      String
+  userAgent      String
+  status         String   // success, failure, blocked
+  riskLevel      String   // low, medium, high, critical
+  metadata       Json?
+  signature      String   // Tamper-proof signature
+
+  @@index([userId])
+  @@index([organizationId])
+  @@index([action])
+  @@index([timestamp])
+  @@index([riskLevel])
+}
+
+model SecurityEvent {
+  id         String   @id @default(cuid())
+  type       String   // brute_force_detected, suspicious_activity, etc.
+  severity   String   // info, warning, error, critical
+  message    String   @db.Text
+  source     String   // audit_monitor, ids, etc.
+  timestamp  DateTime @default(now())
+  resolved   Boolean  @default(false)
+  resolvedAt DateTime?
+  resolvedBy String?
+  metadata   Json?
+
+  @@index([type])
+  @@index([severity])
+  @@index([resolved])
+  @@index([timestamp])
+}
+
+model SecurityAlert {
+  id       String   @id @default(cuid())
+  eventId  String
+  type     String
+  severity String
+  message  String   @db.Text
+  sentAt   DateTime @default(now())
+  channels String[] // Array of channels - email, slack, pagerduty
+
+  @@index([eventId])
+  @@index([sentAt])
+}
+
+model Secret {
+  id             String   @id @default(cuid())
+  name           String
+  type           String   // api_key, password, certificate, encryption_key, oauth_token
+  encryptedValue String   @db.Text
+  iv             String
+  authTag        String
+  version        Int      @default(1)
+  organizationId String?
+  createdBy      String
+  expiresAt      DateTime?
+  rotationDays   Int?
+  lastRotatedAt  DateTime?
+  accessLog      Json?    // JSON array of access entries
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([type])
+}
+
+model IpRule {
+  id             String   @id @default(cuid())
+  ip             String
+  cidr           String?
+  type           String   // whitelist, blacklist
+  reason         String   @db.Text
+  organizationId String?
+  createdBy      String
+  expiresAt      DateTime?
+  active         Boolean  @default(true)
+  createdAt      DateTime @default(now())
+
+  @@index([ip])
+  @@index([organizationId])
+  @@index([active])
+}
+
+model ComplianceReport {
+  id              String   @id @default(cuid())
+  framework       String   // SOC2, RGPD, HIPAA, PCI_DSS, ISO27001
+  organizationId  String?
+  score           Int
+  status          String   // compliant, non_compliant, partial
+  findings        Json?
+  recommendations Json?
+  generatedAt     DateTime @default(now())
+  periodStart     DateTime
+  periodEnd       DateTime
+  nextAuditDate   DateTime?
+  generatedBy     String?
+
+  @@index([framework])
+  @@index([organizationId])
+  @@index([generatedAt])
+}
+
+model UserSecuritySettings {
+  id                  String   @id @default(cuid())
+  userId              String   @unique
+  mfaEnabled          Boolean  @default(false)
+  mfaSecret           String?  @db.Text
+  mfaBackupCodes      Json?
+  mfaType             String?  // totp, sms, email
+  passwordChangedAt   DateTime?
+  failedLoginAttempts Int      @default(0)
+  lockedUntil         DateTime?
+  lastLoginAt         DateTime?
+  lastLoginIp         String?
+  securityQuestions   Json?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model Vulnerability {
+  id                String   @id @default(cuid())
+  cve               String?
+  name              String
+  description       String   @db.Text
+  severity          String   // info, low, medium, high, critical
+  cvssScore         Decimal  @db.Decimal(3, 1)
+  affectedComponent  String
+  affectedVersions  String[] // Array of versions
+  patchedVersions   String[] // Array of versions
+  exploitAvailable  Boolean  @default(false)
+  discoveredAt      DateTime @default(now())
+  resolvedAt        DateTime?
+  status            String   @default("open") // open, acknowledged, in_progress, resolved, wont_fix
+  metadata          Json?
+
+  @@index([cve])
+  @@index([severity])
+  @@index([status])
+  @@index([discoveredAt])
+}
