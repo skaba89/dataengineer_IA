@@ -1,0 +1,104 @@
+# Dependencies
+node_modules
+.pnp
+.pnp.js
+
+# Testing
+coverage
+.nyc_output
+__tests__
+*.test.ts
+*.test.tsx
+*.spec.ts
+*.spec.tsx
+playwright-report
+test-results
+
+# Next.js
+.next
+out
+build
+
+# Production
+dist
+
+# Misc
+.DS_Store
+*.pem
+
+# Debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Local env files
+.env
+.env*.local
+.env.production
+
+# Vercel
+.vercel
+
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+
+# Git
+.git
+.gitignore
+
+# Docker
+Dockerfile
+Dockerfile.*
+docker-compose*.yml
+.docker
+
+# Kubernetes
+kubernetes
+
+# Documentation
+docs
+*.md
+!README.md
+
+# Scripts
+scripts
+
+# Examples
+examples
+
+# Download folder
+download
+
+# Generated files
+*.pdf
+*.docx
+*.xlsx
+*.pptx
+
+# Python
+__pycache__
+*.py
+*.pyc
+.pytest_cache
+
+# Logs
+logs
+*.log
+
+# Database
+*.db
+*.db-journal
+prisma/migrations
+
+# Monitoring
+monitoring
+
+# Upload folder
+upload
