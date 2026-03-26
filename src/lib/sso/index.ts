@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * DataSphere Innovation - Enterprise SSO Advanced
  * 

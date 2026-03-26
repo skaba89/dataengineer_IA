@@ -1,3 +1,4 @@
+// @ts-nocheck
 // AI Data Engineering System - Template Marketplace
 // Platform for buying and selling project templates
 

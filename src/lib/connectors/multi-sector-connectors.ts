@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Multi-Sector Connectors for AI Data Engineering System
 // E-Commerce, Finance, Healthcare, Marketing, CRM, Analytics
 

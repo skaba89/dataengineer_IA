@@ -210,8 +210,8 @@ export default function QualityPage() {
                   <p className="text-3xl font-bold text-white">{summary?.overallScore || 0}%</p>
                 </div>
                 <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center text-2xl font-bold", 
-                  GRADE_COLORS[summary?.overallScore >= 90 ? 'A' : summary?.overallScore >= 80 ? 'B' : 'C'])}>
-                  {summary?.overallScore >= 90 ? 'A' : summary?.overallScore >= 80 ? 'B' : 'C'}
+                  GRADE_COLORS[(summary?.overallScore ?? 0) >= 90 ? 'A' : (summary?.overallScore ?? 0) >= 80 ? 'B' : 'C'])}>
+                  {(summary?.overallScore ?? 0) >= 90 ? 'A' : (summary?.overallScore ?? 0) >= 80 ? 'B' : 'C'}
                 </div>
               </div>
             </CardContent>

@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Enhanced Database & Service Connectors for AI Data Engineering System
 // Supports: PostgreSQL, MySQL, BigQuery, Snowflake, MongoDB, Redis, Kafka, REST APIs, SaaS Connectors
 

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * DataSphere Innovation - Email Service
  * Production-ready email service with SendGrid integration

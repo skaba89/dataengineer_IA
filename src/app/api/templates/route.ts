@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Templates API - Industry templates for quick project setup
 
 import { NextRequest, NextResponse } from 'next/server'

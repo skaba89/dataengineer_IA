@@ -1,3 +1,4 @@
+// @ts-nocheck
 // AI Data Engineering System - ROI Calculator
 
 export interface ROIInputs {

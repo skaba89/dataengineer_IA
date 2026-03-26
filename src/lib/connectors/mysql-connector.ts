@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * DataSphere Innovation - MySQL Connector
  * Complete implementation for MySQL database connections

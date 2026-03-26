@@ -348,5 +348,92 @@
     "telecommunications": "Télécommunications",
     "energy": "Énergie",
     "government": "Gouvernement"
+  },
+  "landing": {
+    "hero": {
+      "badge": "Propulsé par 10 Agents IA autonomes",
+      "title": "Automatisez vos pipelines data avec l'Intelligence Artificielle",
+      "stat1": "10x plus rapide",
+      "stat2": "80% temps économisé",
+      "stat3": "0 erreur critique",
+      "stat4": "35+ connecteurs",
+      "subtitle": "Notre suite d'agents IA autonomes génère, teste et déploie vos pipelines data en quelques jours. Plus besoin de mois de développement manuel.",
+      "cta1": "Essai gratuit 14 jours",
+      "cta2": "Voir la démo",
+      "trust1": "Essai gratuit 14 jours",
+      "trust2": "Sans carte de crédit",
+      "trust3": "Annulation à tout moment"
+    },
+    "problems": {
+      "title": "Sans DataSphere",
+      "problem1": "Time-to-market long",
+      "problem1Desc": "6 à 12 mois pour déployer un nouveau pipeline data",
+      "problem2": "Erreurs manuelles",
+      "problem2Desc": "30% des pipelines contiennent des erreurs critiques",
+      "problem3": "Talents rares",
+      "problem3Desc": "Pénurie de data engineers qualifiés sur le marché"
+    },
+    "solutions": {
+      "title": "Avec DataSphere",
+      "solution1": "Agents IA autonomes",
+      "solution1Desc": "10 agents spécialisés qui automatisent 80% des tâches",
+      "solution2": "10x plus rapide",
+      "solution2Desc": "Déployez vos pipelines en semaines, pas en mois",
+      "solution3": "0 erreur",
+      "solution3Desc": "Code généré testé et validé automatiquement"
+    },
+    "agents": {
+      "title": "10 Agents IA spécialisés",
+      "subtitle": "Chaque agent est conçu pour une tâche spécifique du data engineering, avec une expertise approfondie et des résultats garantis."
+    },
+    "connectors": {
+      "title": "Connectez toutes vos sources de données",
+      "subtitle": "Plus de 35 connecteurs pré-configurés pour les bases de données, data warehouses, APIs et systèmes de fichiers.",
+      "available": "35+ connecteurs disponibles"
+    },
+    "pricing": {
+      "title": "Des forfaits adaptés à vos besoins",
+      "subtitle": "Commencez gratuitement et évoluez selon vos besoins. Sans engagement, sans surprise.",
+      "free": "Gratuit",
+      "starter": "Starter",
+      "professional": "Professional",
+      "enterprise": "Enterprise",
+      "popular": "Populaire",
+      "month": "/mois",
+      "contactSales": "Contacter les ventes",
+      "freeTrial": "Essai gratuit 14 jours"
+    },
+    "testimonials": {
+      "title": "Ils nous font confiance",
+      "subtitle": "Découvrez comment nos clients transforment leurs opérations data avec DataSphere."
+    },
+    "security": {
+      "title": "Sécurité et Conformité entreprise",
+      "subtitle": "Votre sécurité est notre priorité. Nous respectons les standards les plus exigeants."
+    },
+    "faq": {
+      "title": "Questions fréquentes",
+      "subtitle": "Trouvez rapidement les réponses à vos questions."
+    },
+    "cta": {
+      "title": "Prêt à transformer vos data pipelines ?",
+      "subtitle": "Rejoignez plus de 500 entreprises qui ont déjà automatisé leurs pipelines data avec DataSphere. Essai gratuit de 14 jours, sans engagement.",
+      "benefit1": "Mise en place en moins de 30 minutes",
+      "benefit2": "Accès immédiat aux 10 agents IA",
+      "benefit3": "Support dédié pendant l'essai",
+      "contactTitle": "Contactez-nous",
+      "contactSubtitle": "Notre équipe vous répond sous 24h"
+    },
+    "footer": {
+      "description": "La plateforme d'ingénierie de données propulsée par l'IA. Automatisez vos pipelines, libérez votre potentiel.",
+      "product": "Produit",
+      "resources": "Ressources",
+      "company": "Entreprise",
+      "legal": "Mentions légales",
+      "privacy": "Confidentialité",
+      "terms": "CGU",
+      "cgv": "CGV",
+      "copyright": "© 2024 DataSphere Innovation. Tous droits réservés."
+    }
   }
 }

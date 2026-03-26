@@ -348,5 +348,92 @@
     "telecommunications": "Telecommunications",
     "energy": "Energy",
     "government": "Government"
+  },
+  "landing": {
+    "hero": {
+      "badge": "Powered by 10 Autonomous AI Agents",
+      "title": "Automate Your Data Pipelines with AI",
+      "stat1": "10x faster",
+      "stat2": "80% time saved",
+      "stat3": "0 critical errors",
+      "stat4": "35+ connectors",
+      "subtitle": "Our suite of autonomous AI agents generates, tests, and deploys your data pipelines in days. No more months of manual development.",
+      "cta1": "14-day Free Trial",
+      "cta2": "Watch Demo",
+      "trust1": "14-day free trial",
+      "trust2": "No credit card required",
+      "trust3": "Cancel anytime"
+    },
+    "problems": {
+      "title": "Without DataSphere",
+      "problem1": "Long time-to-market",
+      "problem1Desc": "6 to 12 months to deploy a new data pipeline",
+      "problem2": "Manual errors",
+      "problem2Desc": "30% of pipelines contain critical errors",
+      "problem3": "Scarce talent",
+      "problem3Desc": "Shortage of qualified data engineers on the market"
+    },
+    "solutions": {
+      "title": "With DataSphere",
+      "solution1": "Autonomous AI Agents",
+      "solution1Desc": "10 specialized agents that automate 80% of tasks",
+      "solution2": "10x faster",
+      "solution2Desc": "Deploy your pipelines in weeks, not months",
+      "solution3": "0 errors",
+      "solution3Desc": "Generated code tested and validated automatically"
+    },
+    "agents": {
+      "title": "10 Specialized AI Agents",
+      "subtitle": "Each agent is designed for a specific data engineering task, with deep expertise and guaranteed results."
+    },
+    "connectors": {
+      "title": "Connect All Your Data Sources",
+      "subtitle": "Over 35 pre-configured connectors for databases, data warehouses, APIs, and file systems.",
+      "available": "35+ connectors available"
+    },
+    "pricing": {
+      "title": "Plans Tailored to Your Needs",
+      "subtitle": "Start for free and scale as you grow. No commitment, no surprises.",
+      "free": "Free",
+      "starter": "Starter",
+      "professional": "Professional",
+      "enterprise": "Enterprise",
+      "popular": "Popular",
+      "month": "/month",
+      "contactSales": "Contact Sales",
+      "freeTrial": "14-day Free Trial"
+    },
+    "testimonials": {
+      "title": "Trusted by Industry Leaders",
+      "subtitle": "Discover how our clients transform their data operations with DataSphere."
+    },
+    "security": {
+      "title": "Enterprise Security & Compliance",
+      "subtitle": "Your security is our priority. We meet the most demanding standards."
+    },
+    "faq": {
+      "title": "Frequently Asked Questions",
+      "subtitle": "Quickly find answers to your questions."
+    },
+    "cta": {
+      "title": "Ready to Transform Your Data Pipelines?",
+      "subtitle": "Join over 500 companies that have already automated their data pipelines with DataSphere. 14-day free trial, no commitment.",
+      "benefit1": "Setup in less than 30 minutes",
+      "benefit2": "Immediate access to 10 AI agents",
+      "benefit3": "Dedicated support during trial",
+      "contactTitle": "Contact Us",
+      "contactSubtitle": "Our team responds within 24h"
+    },
+    "footer": {
+      "description": "The AI-powered data engineering platform. Automate your pipelines, unlock your potential.",
+      "product": "Product",
+      "resources": "Resources",
+      "company": "Company",
+      "legal": "Legal",
+      "privacy": "Privacy",
+      "terms": "Terms",
+      "cgv": "Terms of Sale",
+      "copyright": "© 2024 DataSphere Innovation. All rights reserved."
+    }
   }
 }

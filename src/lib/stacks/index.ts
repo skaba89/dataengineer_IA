@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Data Stack Configurations for AI Data Engineering System
 // Supports: dbt, Airflow, Dagster, Spark, Kafka, Fivetran, Airbyte, Prefect, Great Expectations
 

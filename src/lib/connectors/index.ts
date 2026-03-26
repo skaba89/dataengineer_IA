@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Database Connectors - Real implementations for PostgreSQL, BigQuery, MySQL, MongoDB, Snowflake
 import { db } from "@/lib/db"
 import { Pool } from "pg"

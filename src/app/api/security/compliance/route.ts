@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
       } else {
         // Generate estimated scores based on security posture
         status[framework] = {
-          score: await estimateComplianceScore(framework, organizationId),
+          score: await estimateComplianceScore(framework, organizationId ?? undefined),
           status: 'estimated',
           lastReport: undefined
         };

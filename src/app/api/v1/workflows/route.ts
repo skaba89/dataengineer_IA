@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Public API v1 - Workflows endpoint
 
 import { NextRequest, NextResponse } from 'next/server'

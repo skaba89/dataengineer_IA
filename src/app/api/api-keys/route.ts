@@ -33,7 +33,6 @@ export async function GET() {
         id: true,
         name: true,
         key: true,
-        permissions: true,
         lastUsed: true,
         expiresAt: true,
         createdAt: true
@@ -100,7 +99,6 @@ export async function POST(request: NextRequest) {
         name: name || 'API Key',
         key,
         organizationId: user.organizationId,
-        permissions: JSON.stringify(permissions || ['read']),
         expiresAt
       }
     });
@@ -111,7 +109,6 @@ export async function POST(request: NextRequest) {
         id: apiKey.id,
         name: apiKey.name,
         key: apiKey.key, // Return full key only on creation
-        permissions: apiKey.permissions,
         expiresAt: apiKey.expiresAt,
         createdAt: apiKey.createdAt
       },

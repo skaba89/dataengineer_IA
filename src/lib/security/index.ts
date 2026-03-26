@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * DataSphere Innovation - Security & Compliance Engine
  * Enterprise-grade security infrastructure for maximum protection

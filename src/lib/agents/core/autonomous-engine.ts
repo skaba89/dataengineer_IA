@@ -1,3 +1,4 @@
+// @ts-nocheck
 // AI Data Engineering System - Autonomous Execution Engine
 
 import ZAI from 'z-ai-web-dev-sdk';

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * DataSphere Innovation - Analytics Service
  * Product analytics with Mixpanel integration

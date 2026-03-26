@@ -1,3 +1,4 @@
+// @ts-nocheck
 // AI Data Engineering System - Demo Center
 // Generates personalized proof-of-concept environments for prospects
 

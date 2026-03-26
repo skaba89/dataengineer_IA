@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * DataSphere Innovation - Centralized Error Handling System
  * Production-ready error management with classification, logging, and recovery

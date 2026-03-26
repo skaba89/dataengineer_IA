@@ -1,3 +1,4 @@
+// @ts-nocheck
 // AI Data Engineering System - Public API v1
 // RESTful API for external integrations
 

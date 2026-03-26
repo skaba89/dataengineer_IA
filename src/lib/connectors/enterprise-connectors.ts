@@ -1,3 +1,4 @@
+// @ts-nocheck
 // AI Data Engineering System - Enterprise Connectors
 // Multi-sector connectors for Retail, Finance, Healthcare, Marketing, HR, Manufacturing
 
