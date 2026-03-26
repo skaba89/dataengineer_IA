@@ -1,0 +1,32 @@
+# ============================================
+# Grafana Datasources Configuration
+# ============================================
+apiVersion: 1
+
+datasources:
+  # Prometheus
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    editable: false
+    jsonData:
+      timeInterval: "15s"
+      httpMethod: "POST"
+
+  # PostgreSQL
+  - name: PostgreSQL
+    type: postgres
+    access: proxy
+    url: postgres:5432
+    database: datasphere
+    user: datasphere
+    secureJsonData:
+      password: "Datasphere2024!"
+    jsonData:
+      sslmode: "disable"
+      maxOpenConns: 10
+      maxIdleConns: 5
+      connMaxLifetime: 14400
+    editable: false

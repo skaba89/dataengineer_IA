@@ -1,0 +1,223 @@
+# ============================================
+# DataSphere Innovation - Local Server Deployment
+# ============================================
+# Usage: docker-compose -f docker-compose.local.yml up -d
+# ============================================
+
+version: '3.9'
+
+services:
+  # ============================================
+  # Application - DataSphere Innovation
+  # ============================================
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - NODE_ENV=production
+    container_name: datasphere-app
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://datasphere:Datasphere2024!@postgres:5432/datasphere?schema=public
+      - REDIS_URL=redis://redis:6379
+      - NEXTAUTH_URL=http://localhost:3000
+      - NEXTAUTH_SECRET=datasphere-local-secret-key-change-in-production-2024
+    env_file:
+      - .env.production.local
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - datasphere-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ============================================
+  # PostgreSQL Database
+  # ============================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: datasphere-postgres
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: datasphere
+      POSTGRES_PASSWORD: Datasphere2024!
+      POSTGRES_DB: datasphere
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - datasphere-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U datasphere -d datasphere"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ============================================
+  # Redis Cache
+  # ============================================
+  redis:
+    image: redis:7-alpine
+    container_name: datasphere-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis-data:/data
+    networks:
+      - datasphere-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "3"
+
+  # ============================================
+  # Nginx Reverse Proxy (Optional)
+  # ============================================
+  nginx:
+    image: nginx:alpine
+    container_name: datasphere-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - app
+    networks:
+      - datasphere-network
+    profiles:
+      - with-nginx
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "3"
+
+  # ============================================
+  # Prometheus Monitoring (Optional)
+  # ============================================
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: datasphere-prometheus
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.enable-lifecycle'
+    networks:
+      - datasphere-network
+    profiles:
+      - monitoring
+
+  # ============================================
+  # Grafana Dashboard (Optional)
+  # ============================================
+  grafana:
+    image: grafana/grafana:latest
+    container_name: datasphere-grafana
+    restart: unless-stopped
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=datasphere2024
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources:ro
+    depends_on:
+      - prometheus
+    networks:
+      - datasphere-network
+    profiles:
+      - monitoring
+
+  # ============================================
+  # Backup Service (Optional)
+  # ============================================
+  backup:
+    image: postgres:16-alpine
+    container_name: datasphere-backup
+    restart: unless-stopped
+    environment:
+      - PGHOST=postgres
+      - PGUSER=datasphere
+      - PGPASSWORD=Datasphere2024!
+      - PGDATABASE=datasphere
+    volumes:
+      - postgres-data:/var/lib/postgresql/data:ro
+      - backup-data:/backups
+    networks:
+      - datasphere-network
+    profiles:
+      - backup
+    command: >
+      sh -c "while true; do
+        TIMESTAMP=$$(date +%Y%m%d_%H%M%S);
+        pg_dump -h postgres -U datasphere datasphere | gzip > /backups/datasphere_$$TIMESTAMP.sql.gz;
+        find /backups -name '*.sql.gz' -mtime +30 -delete;
+        sleep 86400;
+      done"
+
+# ============================================
+# Networks
+# ============================================
+networks:
+  datasphere-network:
+    driver: bridge
+    name: datasphere-network
+
+# ============================================
+# Volumes
+# ============================================
+volumes:
+  postgres-data:
+    name: datasphere-postgres-data
+  redis-data:
+    name: datasphere-redis-data
+  prometheus-data:
+    name: datasphere-prometheus-data
+  grafana-data:
+    name: datasphere-grafana-data
+  backup-data:
+    name: datasphere-backup-data
